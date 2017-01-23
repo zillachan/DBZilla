@@ -58,22 +58,6 @@ public class ModelHolder {
         }
     }
 
-    private static HashMap<Class, String> keyCache = new HashMap<>();
 
-    /**
-     * get Id name
-     *
-     * @param c
-     * @return
-     */
-    public static String getIdName(Class c) {
-        if (keyCache.containsKey(c)) {
-            return keyCache.get(c);
-        } else {
-            String key = AnnotationUtil.getIdName(c);
-            keyCache.put(c, key);
-            return key;
-        }
-    }
 
 }

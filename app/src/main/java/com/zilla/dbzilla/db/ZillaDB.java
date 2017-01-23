@@ -87,7 +87,7 @@ public class ZillaDB {
         long id = 0;
         try {
             filter(model.getClass());
-            tableName = AnnotationUtil.getTableNameByModel(model.getClass());
+            tableName = AnnotationUtil.getTableName(model.getClass());
 
             value = AnnotationUtil.model2ContentValues(database, model, tableName);
 
@@ -98,7 +98,7 @@ public class ZillaDB {
         } catch (SQLiteConstraintException e) {//主键冲突
             Log.d("INSERT '" + tableName + "' failed try remove key again.", e);
             try {
-                String key = AnnotationUtil.getKeyByModel(model.getClass());
+                String key = AnnotationUtil.getIdName(model.getClass());
                 value.remove(key);
 
                 id = database.insertWithOnConflict(tableName, "", value,
@@ -116,7 +116,7 @@ public class ZillaDB {
 //            update(model);
             Log.e("INSERT '" + tableName + "' failed.", e);
         } finally {
-            AnnotationUtil.setIdValue(model, id);
+            AnnotationUtil.setAutoIdValue(model, id);
             lock.writeLock().unlock();
         }
         return true;
@@ -694,7 +694,7 @@ public class ZillaDB {
      * @return if the table exist
      */
     public boolean isTableExist(Class c) {
-        String tableName = AnnotationUtil.getTableNameByModel(c);
+        String tableName = AnnotationUtil.getTableName(c);
         // 如果已经判断过该表的已经存在
         if (TableHolder.isTableExist(tableName))
             return true;

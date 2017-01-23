@@ -55,7 +55,10 @@ public class AnnotationUtil {
      * @return the key of the table
      */
     public static String getIdName(Class<?> model) {
+        return getAutoIdName(model, false);
+    }
 
+    private static String getAutoIdName(Class<?> model, boolean isAutoIncrease) {
         if (tableIdCache.containsKey(model)) {
             return tableIdCache.get(model);
         } else {
@@ -76,10 +79,21 @@ public class AnnotationUtil {
                 } else {
                     throw new RuntimeException("@Id annotation is not found, Please make sure the @Id annotation is added in Model!");
                 }
+                if (isAutoIncrease) {
+                    //type check.
+                    Class type = idField.getType();
+                    if (type == int.class || type == long.class) {
+                        return primaryKey;
+                    } else {
+                        return null;
+                    }
+                }
             }
+            tableIdCache.put(model, primaryKey);
             return primaryKey;
         }
     }
+
 
     /**
      * get tableName from a model.
@@ -114,18 +128,7 @@ public class AnnotationUtil {
      * @return
      */
     public static Object getIdValue(Object obj) {
-        Object value = null;
-        Class c = obj.getClass();
-        String key = getIdName(c);
-        try {
-            Field keyField = c.getField(key);
-            value = keyField.get(obj);
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        }
-        return value;
+        return ReflectUtil.getFieldValue(obj, getIdName(obj.getClass()));
     }
 
     /**
@@ -136,12 +139,12 @@ public class AnnotationUtil {
      * @return
      */
     public static void setIdValue(Object obj, Object value) {
-        String key = ModelHolder.getIdName(obj.getClass());
+        String key = getIdName(obj.getClass());
         ReflectUtil.setFieldValue(obj, key, value);
     }
 
     public static void setAutoIdValue(Object obj, Object value) {
-        String key = ModelHolder.getIdName(obj.getClass());
+        String key = getAutoIdName(obj.getClass(), true);
         ReflectUtil.setFieldValue(obj, key, value);
     }
 

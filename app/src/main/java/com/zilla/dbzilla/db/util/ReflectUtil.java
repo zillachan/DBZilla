@@ -32,6 +32,9 @@ import java.util.HashMap;
  */
 public class ReflectUtil {
 
+    private static HashMap<String, Field> modelFieldCache = new HashMap<>();
+    private static HashMap<Class, Field[]> modelFieldsCache = new HashMap<>();
+
     public static Object invokeMethod(String className, String methodName, Class[] properties, Object... values) {
         try {
             Class<?> c = Class.forName(className);
@@ -118,6 +121,7 @@ public class ReflectUtil {
      * @param value the value to be set
      */
     public static void setFieldValue(Object obj, String key, Object value) {
+        if (key == null) return;
         Field field = null;
         try {
             field = obj.getClass().getDeclaredField(key);
@@ -142,24 +146,19 @@ public class ReflectUtil {
      * @return the value of field
      */
     public static Object getFieldValue(Object obj, String key) {
-        Field field = null;
         Object result = null;
         try {
-            field = obj.getClass().getDeclaredField(key);
+            Field field = getModelField(obj.getClass(), key);
             field.setAccessible(true);
             result = field.get(obj);
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
         } catch (IllegalArgumentException e) {
-            e.printStackTrace();
+            Log.e("IllegalArgumentException", e);
         } catch (IllegalAccessException e) {
-            e.printStackTrace();
+            Log.e("IllegalAccessException", e);
         }
         return result;
     }
 
-
-    private static HashMap<String, Field> modelFieldCache = new HashMap<>();
 
     /**
      * get field by field name from class.
@@ -185,7 +184,6 @@ public class ReflectUtil {
         }
     }
 
-    private static HashMap<Class, Field[]> modelFieldsCache = new HashMap<>();
 
     /**
      * get fields of model.
