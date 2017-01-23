@@ -84,6 +84,7 @@ public class ZillaDB {
         lock.writeLock().lock();
         String tableName = null;
         ContentValues value = null;
+        long id = 0;
         try {
             filter(model.getClass());
             tableName = AnnotationUtil.getTableNameByModel(model.getClass());
@@ -91,7 +92,7 @@ public class ZillaDB {
             value = AnnotationUtil.model2ContentValues(database, model, tableName);
 
             // 添加异常处理，如果插入冲突，改为update
-            database.insertWithOnConflict(tableName, "", value,
+            id = database.insertWithOnConflict(tableName, "", value,
                     SQLiteDatabase.CONFLICT_NONE);//主键冲突策略，替换掉以往的数据
 
         } catch (SQLiteConstraintException e) {//主键冲突
@@ -100,12 +101,9 @@ public class ZillaDB {
                 String key = AnnotationUtil.getKeyByModel(model.getClass());
                 value.remove(key);
 
-                database.insertWithOnConflict(tableName, "", value,
+                id = database.insertWithOnConflict(tableName, "", value,
                         SQLiteDatabase.CONFLICT_REPLACE);//主键冲突策略，替换掉以往的数据
                 Log.i("INSERT'" + tableName + "'success.");
-
-                int rowid = getLast_insert_rowid();
-                AnnotationUtil.setKeyValue(model, rowid);
 
             } catch (SQLiteConstraintException e1) {
                 Log.e("INSERT '" + tableName + "' failed.", e1);
@@ -118,6 +116,7 @@ public class ZillaDB {
 //            update(model);
             Log.e("INSERT '" + tableName + "' failed.", e);
         } finally {
+            AnnotationUtil.setIdValue(model, id);
             lock.writeLock().unlock();
         }
         return true;
@@ -136,27 +135,18 @@ public class ZillaDB {
         if (list == null || list.size() == 0) {
             return false;
         }
-        ContentValues values = null;
-        Cursor cursor = null;
         try {
             Object temp = list.get(0);
             filter(temp.getClass());
-            String tableName = AnnotationUtil.getClassName(temp.getClass());
-            cursor = database.query(tableName, null, null, null, null, null, null, "1");
             database.beginTransaction();
             for (int i = 0, l = list.size(); i < l; i++) {
-                Object model = list.get(i);
-//                values = model2ContentValues(model, cursor);
-//                this.database.insert(tableName, null, values);
-                save(model);
-//                model._id = String.valueOf(getLast_insert_rowid());
+                save(list.get(i));
             }
             database.setTransactionSuccessful();// 必须执行该方法，否则事务会回滚
             database.endTransaction();
         } catch (Exception e) {
-            Log.e(e.getMessage());
+            Log.e("saveList", e);
         } finally {
-            closeCursor(cursor);
             lock.writeLock().unlock();
         }
         return true;
@@ -175,8 +165,8 @@ public class ZillaDB {
         int row = 0;
         try {
             filter(model.getClass());
-            String key = AnnotationUtil.getClassKey(model.getClass());
-            row = database.delete(AnnotationUtil.getClassName(model.getClass()), key + " = ? ", new String[]{ReflectUtil.getFieldValue(model, key).toString()});
+            String key = AnnotationUtil.getIdName(model.getClass());
+            row = database.delete(AnnotationUtil.getTableName(model.getClass()), key + " = ? ", new String[]{ReflectUtil.getFieldValue(model, key).toString()});
         } catch (Exception e) {
             Log.e("" + e.getMessage());
         } finally {
@@ -198,7 +188,7 @@ public class ZillaDB {
         lock.writeLock().lock();
         try {
             filter(c);
-            rows = database.delete(AnnotationUtil.getClassName(c), null, null);
+            rows = database.delete(AnnotationUtil.getTableName(c), null, null);
         } catch (Exception e) {
             Log.e("" + e.getMessage());
         } finally {
@@ -213,7 +203,7 @@ public class ZillaDB {
         lock.writeLock().lock();
         try {
             filter(c);
-            rows = database.delete(AnnotationUtil.getClassName(c), whereClause, whereArgs);
+            rows = database.delete(AnnotationUtil.getTableName(c), whereClause, whereArgs);
         } catch (Exception e) {
             Log.e("" + e.getMessage());
         } finally {
@@ -229,7 +219,7 @@ public class ZillaDB {
             filter(model.getClass());
             String key = columnName;
             if (TextUtils.isEmpty(key)) {
-                key = AnnotationUtil.getClassKey(model.getClass());
+                key = AnnotationUtil.getIdName(model.getClass());
             }
             String keyValue = ReflectUtil.getFieldValue(model, key).toString();
             if (TextUtils.isEmpty(keyValue)) {// 如果更新的主键为空，则插入该条记录
@@ -268,8 +258,8 @@ public class ZillaDB {
         ContentValues value = null;
         try {
             filter(model.getClass());
-            tableName = AnnotationUtil.getClassName(model.getClass());
-            key = AnnotationUtil.getClassKey(model.getClass());
+            tableName = AnnotationUtil.getTableName(model.getClass());
+            key = AnnotationUtil.getIdName(model.getClass());
             keyValue = ReflectUtil.getFieldValue(model, key).toString();
             cursor = database.query(tableName, null, null, null, null, null, null, "1");
             value = model2ContentValues(model, cursor);
@@ -418,7 +408,7 @@ public class ZillaDB {
         }
         Object temp = list.get(0);
         filter(temp.getClass());
-        String tableName = AnnotationUtil.getClassName(temp.getClass());
+        String tableName = AnnotationUtil.getTableName(temp.getClass());
         Cursor cursor = null;
         try {
             cursor = database.query(tableName, null, null, null, null, null, null, "1");
@@ -451,7 +441,7 @@ public class ZillaDB {
         }
         Object temp = list.get(0);
         filter(temp.getClass());
-        String tableName = AnnotationUtil.getClassName(temp.getClass());
+        String tableName = AnnotationUtil.getTableName(temp.getClass());
         Cursor cursor = null;
         try {
             cursor = database.query(tableName, null, null, null, null, null, null, "1");
@@ -526,7 +516,7 @@ public class ZillaDB {
     public <T> List<T> queryAll(Class<T> c) {
         lock.readLock().lock();
         filter(c);
-        String tableName = AnnotationUtil.getClassName(c);
+        String tableName = AnnotationUtil.getTableName(c);
         List<T> list = new ArrayList<T>();
         Cursor cursor = null;
         try {
@@ -560,10 +550,10 @@ public class ZillaDB {
     public <T> T queryById(Class<T> c, String id) {
         lock.readLock().lock();
         filter(c);
-        String tableName = AnnotationUtil.getClassName(c);
+        String tableName = AnnotationUtil.getTableName(c);
         Cursor cursor = null;
         T result = null;
-        String key = AnnotationUtil.getClassKey(c);
+        String key = AnnotationUtil.getIdName(c);
         try {
             cursor = this.database.query(tableName, null, key + "=?", new String[]{id}, null, null, null);
             if (cursor.getCount() == 0) {
@@ -650,7 +640,7 @@ public class ZillaDB {
     public <T> List<T> query(Class<T> c, String selection, String[] condition, String orderBy, String limit) {
         lock.readLock().lock();
         filter(c);
-        String tableName = AnnotationUtil.getClassName(c);
+        String tableName = AnnotationUtil.getTableName(c);
         List<T> list = new ArrayList<T>();
         Cursor cursor = null;
         try {
@@ -742,7 +732,7 @@ public class ZillaDB {
 //        lock.writeLock().lock();
         Cursor cursor = null;
         try {
-            String tableName = AnnotationUtil.getClassName(c);
+            String tableName = AnnotationUtil.getTableName(c);
             cursor = database.query(tableName, null, null, null, null, null, null, "1");
             ContentValues value = new ContentValues();
             String[] names = cursor.getColumnNames();//table fields
@@ -801,10 +791,10 @@ public class ZillaDB {
         try {
             StringBuilder sBuilder = new StringBuilder();
             sBuilder.append("CREATE TABLE IF NOT EXISTS ");
-            sBuilder.append(AnnotationUtil.getClassName(c));// 表名
+            sBuilder.append(AnnotationUtil.getTableName(c));// 表名
 //            String[] fields = ReflectUtil.getFields(c);
             Field[] fields = c.getDeclaredFields();
-            String key = AnnotationUtil.getClassKey(c);
+            String key = AnnotationUtil.getIdName(c);
             sBuilder.append(" ( ");
             List<Field> fieldList = new ArrayList<Field>();
             for (Field field : fields) {

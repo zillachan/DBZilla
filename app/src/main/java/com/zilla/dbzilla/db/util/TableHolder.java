@@ -15,7 +15,11 @@ limitations under the License.
  */
 package com.zilla.dbzilla.db.util;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 
 /**
  * Table cache class
@@ -27,7 +31,7 @@ import java.util.ArrayList;
 public class TableHolder {
 
 	public static ArrayList<String> tableList = new ArrayList<String>();
-	
+
 	/**
 	 * add tableName to cache
 	 * <br>
@@ -50,5 +54,26 @@ public class TableHolder {
 	 */
 	public static boolean isTableExist(String tableName){
 		return tableList.contains(tableName);
+	}
+
+	private static HashMap<String, String[]> tableFieldCache = new HashMap<>();
+
+	/**
+	 * get table fields by tableName
+	 *
+	 * @param database
+	 * @param tableName
+	 * @return
+	 */
+	public static String[] getTableFields(SQLiteDatabase database, String tableName) {
+		if (tableFieldCache.containsKey(tableName)) {
+			return tableFieldCache.get(tableName);
+		} else {
+			Cursor cursor = database.query(tableName, null, null, null, null, null, null, "1");//执行了一次空查询。
+			String[] names = cursor.getColumnNames();
+			tableFieldCache.put(tableName, names);
+			cursor.close();
+			return names;
+		}
 	}
 }

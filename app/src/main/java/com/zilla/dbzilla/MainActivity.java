@@ -3,9 +3,12 @@ package com.zilla.dbzilla;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 
-import android.util.Log;
+import com.github.snowdream.android.util.Log;
 import com.zilla.dbzilla.db.DBHelper;
 import com.zilla.dbzilla.db.ZillaDB;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -14,9 +17,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        DBHelper.init(getApplication(),"test.db",1);
-        testSave();
-
+        DBHelper.init(getApplication(), "test.db", 1);
+//        testSave();
+        testSaveList();
     }
 
     private void testSave() {
@@ -29,6 +32,24 @@ public class MainActivity extends AppCompatActivity {
         ZillaDB.getInstance().save(user);
 
 
-        Log.d("testSave",user.toString());
+        Log.d("testSave", user.toString());
+    }
+
+
+    private void testSaveList() {
+
+        List<User> list = new ArrayList<>();
+        for (int i = 0; i < 10000; i++) {
+            User user = new User();
+            user.setName("zhang");
+            user.setAddress("binghu");
+            user.setAge(i);
+            user.setSalary2(0.1 + i);
+            list.add(user);
+        }
+        long begin = System.currentTimeMillis();
+        ZillaDB.getInstance().saveList(list);
+        long end = System.currentTimeMillis();
+        Log.d("save 10000 items, use times:" + (end - begin) + "");
     }
 }

@@ -16,7 +16,6 @@ limitations under the License.
 package com.zilla.dbzilla.db.util;
 
 import android.content.ContentValues;
-import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.text.TextUtils;
 
@@ -30,7 +29,6 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * annotation util
@@ -41,6 +39,13 @@ import java.util.Locale;
  */
 public class AnnotationUtil {
 
+
+    /**
+     * get the tableName from Model
+     */
+    private static HashMap<Class, String> tableNameCache = new HashMap<>();
+    private static HashMap<Class, String> tableIdCache = new HashMap<>();
+
     /**
      * get @Id annotation from a model.
      * <br>
@@ -49,26 +54,57 @@ public class AnnotationUtil {
      * @param model the pojo model
      * @return the key of the table
      */
-    public static String getClassKey(Class<?> model) {
-        String primaryKey = "";
-        Field[] fields = model.getDeclaredFields();
-        if (fields != null) {
-            Id id = null;
-            Field idField = null;
-            for (Field field : fields) { //获取ID注解
-                id = field.getAnnotation(Id.class);
-                if (id != null) {
-                    idField = field;
-                    break;
+    public static String getIdName(Class<?> model) {
+
+        if (tableIdCache.containsKey(model)) {
+            return tableIdCache.get(model);
+        } else {
+            String primaryKey = "";
+            List<ModelProperty> modelProperties = ModelHolder.getProperties(model);
+            if (modelProperties != null) {
+                Id id = null;
+                Field idField = null;
+                for (ModelProperty modelProperty : modelProperties) { //获取ID注解
+                    id = modelProperty.getField().getAnnotation(Id.class);
+                    if (id != null) {
+                        idField = modelProperty.getField();
+                        break;
+                    }
+                }
+                if (id != null) { //有ID注解
+                    primaryKey = idField.getName();
+                } else {
+                    throw new RuntimeException("@Id annotation is not found, Please make sure the @Id annotation is added in Model!");
                 }
             }
-            if (id != null) { //有ID注解
-                primaryKey = idField.getName();
-            } else {
-                throw new RuntimeException("@Id annotation is not found, Please make sure the @Id annotation is added in Model!");
-            }
+            return primaryKey;
         }
-        return primaryKey;
+    }
+
+    /**
+     * get tableName from a model.
+     * <br>
+     * 获取Class注释名称，如果没有注释名称则取类名的小写字符串
+     *
+     * @param c the pojo model
+     * @return the table name of the model
+     */
+    public static String getTableName(Class<?> c) {
+        if (tableNameCache.containsKey(c)) {
+            return tableNameCache.get(c);
+        } else {
+            String tableName;
+            Table table = c.getAnnotation(Table.class);
+            if (table == null || TextUtils.isEmpty(table.value())) {
+                //如果存在类名注释，使用注释名；否则使用类名小写的字符串作为表名
+                String className = c.getName();
+                tableName = className.substring(className.lastIndexOf(".") + 1).toLowerCase();
+            } else {
+                tableName = table.value();
+            }
+            tableNameCache.put(c, tableName);
+            return tableName;
+        }
     }
 
     /**
@@ -77,10 +113,10 @@ public class AnnotationUtil {
      * @param obj
      * @return
      */
-    public static Object getKeyValue(Object obj) {
+    public static Object getIdValue(Object obj) {
         Object value = null;
         Class c = obj.getClass();
-        String key = getClassKey(c);
+        String key = getIdName(c);
         try {
             Field keyField = c.getField(key);
             value = keyField.get(obj);
@@ -99,14 +135,20 @@ public class AnnotationUtil {
      * @param value
      * @return
      */
-    public static void setKeyValue(Object obj, Object value) {
-        ReflectUtil.setFieldValue(obj, getKeyByModel(obj.getClass()), value);
+    public static void setIdValue(Object obj, Object value) {
+        String key = ModelHolder.getIdName(obj.getClass());
+        ReflectUtil.setFieldValue(obj, key, value);
+    }
+
+    public static void setAutoIdValue(Object obj, Object value) {
+        String key = ModelHolder.getIdName(obj.getClass());
+        ReflectUtil.setFieldValue(obj, key, value);
     }
 
     public static ContentValues model2ContentValues(SQLiteDatabase database, Object model, String tableName) {
         ContentValues value = new ContentValues();
-        String[] tableFields = getTableFields(database, tableName);
-        HashMap<String, Object> mValues = getContentValues(value);
+        String[] tableFields = TableHolder.getTableFields(database, tableName);
+        HashMap<String, Object> mValues = getContentmValues(value);
         for (int i = 0, l = tableFields.length; i < l; i++) {
             mValues.put(tableFields[i], ReflectUtil.getFieldValue(model, tableFields[i]));
         }
@@ -114,36 +156,19 @@ public class AnnotationUtil {
     }
 
 
-    private static HashMap<String, Object> getContentValues(ContentValues value) {
-        Field f = getModelField(value.getClass(), "mValues");
+    private static HashMap<String, Object> getContentmValues(ContentValues value) {
+        Field f = ReflectUtil.getModelField(value.getClass(), "mValues");
         f.setAccessible(true);
         if (f != null) {
             try {
                 return (HashMap<String, Object>) f.get(value);
             } catch (IllegalAccessException e) {
-                Log.e("getContentValues", e);
+                Log.e("getContentmValues", e);
             }
         }
         return null;
     }
 
-    /**
-     * get tableName from a model.
-     * <br>
-     * 获取Class注释名称，如果没有注释名称则取类名的小写字符串
-     *
-     * @param model the pojo model
-     * @return the table name of the model
-     */
-    public static String getClassName(Class<?> model) {
-        Table table = model.getAnnotation(Table.class);
-        if (table == null || TextUtils.isEmpty(table.value())) {
-            //如果存在类名注释，使用注释名；否则使用类名小写的字符串作为表名
-            String className = model.getName();
-            return className.substring(className.lastIndexOf(".") + 1).toLowerCase(Locale.CHINA);
-        }
-        return table.value();
-    }
 
     /**
      * getChildClass
@@ -225,104 +250,4 @@ public class AnnotationUtil {
     }
 
 
-    /**
-     * get the tableName from Model
-     */
-    private static HashMap<Class, String> tableNameCache = new HashMap<>();
-    private static HashMap<Class, String> keyCache = new HashMap<>();
-    private static HashMap<String, String[]> tableFieldCache = new HashMap<>();
-    private static HashMap<Class, Field[]> modelFieldsCache = new HashMap<>();
-    private static HashMap<String, Field> modelFieldCache = new HashMap<>();
-
-
-    /**
-     * get table name from model.
-     *
-     * @param c
-     * @return
-     */
-    public static String getTableNameByModel(Class c) {
-        if (tableNameCache.containsKey(c)) {
-            return tableNameCache.get(c);
-        } else {
-            String tableName = AnnotationUtil.getClassName(c);
-            tableNameCache.put(c, tableName);
-            return tableName;
-        }
-    }
-
-    /**
-     * get the key of table
-     *
-     * @param c
-     * @return
-     */
-    public static String getKeyByModel(Class c) {
-        if (keyCache.containsKey(c)) {
-            return keyCache.get(c);
-        } else {
-            String key = AnnotationUtil.getClassKey(c);
-            keyCache.put(c, key);
-            return key;
-        }
-    }
-
-    /**
-     * get table fields by tableName
-     *
-     * @param database
-     * @param tableName
-     * @return
-     */
-    public static String[] getTableFields(SQLiteDatabase database, String tableName) {
-        if (tableFieldCache.containsKey(tableName)) {
-            return tableFieldCache.get(tableName);
-        } else {
-            Cursor cursor = database.query(tableName, null, null, null, null, null, null, "1");//执行了一次空查询。
-            String[] names = cursor.getColumnNames();
-            tableFieldCache.put(tableName, names);
-            cursor.close();
-            return names;
-        }
-    }
-
-    /**
-     * get fields of model.
-     *
-     * @param c
-     * @return
-     */
-    public static Field[] getModelFields(Class c) {
-        if (modelFieldsCache.containsKey(c)) {
-            return modelFieldsCache.get(c);
-        } else {
-            Field[] fields = c.getDeclaredFields();
-            modelFieldsCache.put(c, fields);
-            return fields;
-        }
-    }
-
-    /**
-     * get field by field name from class.
-     *
-     * @param c
-     * @param fieldName
-     * @return
-     */
-    public static Field getModelField(Class c, String fieldName) {
-        String key = c.getName() + "." + fieldName;
-        if (modelFieldCache.containsKey(key)) {
-            return modelFieldCache.get(key);
-        } else {
-            Field f = null;
-            try {
-                f = c.getDeclaredField(fieldName);
-            } catch (NoSuchFieldException e) {
-                e.printStackTrace();
-            } finally {
-                modelFieldCache.put(key, f);
-                return f;
-            }
-        }
-    }
 }

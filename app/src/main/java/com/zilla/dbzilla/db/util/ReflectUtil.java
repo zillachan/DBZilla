@@ -21,6 +21,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.HashMap;
 
 /**
  * 反射工具类<br>
@@ -156,4 +157,50 @@ public class ReflectUtil {
         }
         return result;
     }
+
+
+    private static HashMap<String, Field> modelFieldCache = new HashMap<>();
+
+    /**
+     * get field by field name from class.
+     *
+     * @param c
+     * @param fieldName
+     * @return
+     */
+    public static Field getModelField(Class c, String fieldName) {
+        String key = c.getName() + "." + fieldName;
+        if (modelFieldCache.containsKey(key)) {
+            return modelFieldCache.get(key);
+        } else {
+            Field f = null;
+            try {
+                f = c.getDeclaredField(fieldName);
+            } catch (NoSuchFieldException e) {
+                e.printStackTrace();
+            } finally {
+                modelFieldCache.put(key, f);
+                return f;
+            }
+        }
+    }
+
+    private static HashMap<Class, Field[]> modelFieldsCache = new HashMap<>();
+
+    /**
+     * get fields of model.
+     *
+     * @param c
+     * @return
+     */
+    public static Field[] getModelFields(Class c) {
+        if (modelFieldsCache.containsKey(c)) {
+            return modelFieldsCache.get(c);
+        } else {
+            Field[] fields = c.getDeclaredFields();
+            modelFieldsCache.put(c, fields);
+            return fields;
+        }
+    }
+
 }
