@@ -59,5 +59,12 @@ public class ModelHolder {
     }
 
 
+    public static Field getFieldByName(Class c, String fieldName) {
+        List<ModelProperty> properties = getProperties(c);
+        for (ModelProperty modelProperty : properties) {
+            if (modelProperty.getName().equals(fieldName)) return modelProperty.getField();
+        }
+        return null;
+    }
 
 }

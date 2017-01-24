@@ -128,7 +128,8 @@ public class AnnotationUtil {
      * @return
      */
     public static Object getIdValue(Object obj) {
-        return ReflectUtil.getFieldValue(obj, getIdName(obj.getClass()));
+        Field idField = ModelHolder.getFieldByName(obj.getClass(), getIdName(obj.getClass()));
+        return ReflectUtil.getFieldValue(obj, idField);
     }
 
     /**
@@ -139,7 +140,8 @@ public class AnnotationUtil {
      */
     public static long getAutoIdValue(Object obj) {
         String key = getAutoIdName(obj.getClass(), true);
-        Object result = ReflectUtil.getFieldValue(obj, key);
+        Field keyField = ModelHolder.getFieldByName(obj.getClass(), key);
+        Object result = ReflectUtil.getFieldValue(obj, keyField);
         if (result != null) {
             return (long) result;
         }
@@ -167,8 +169,9 @@ public class AnnotationUtil {
         ContentValues value = new ContentValues();
         String[] tableFields = TableHolder.getTableFields(database, tableName);
         HashMap<String, Object> mValues = getContentmValues(value);
+
         for (int i = 0, l = tableFields.length; i < l; i++) {
-            mValues.put(tableFields[i], ReflectUtil.getFieldValue(model, tableFields[i]));
+            mValues.put(tableFields[i], ReflectUtil.getFieldValue(model, ModelHolder.getFieldByName(model.getClass(), tableFields[i])));
         }
         return value;
     }

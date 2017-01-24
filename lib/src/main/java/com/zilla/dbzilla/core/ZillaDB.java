@@ -24,9 +24,7 @@ import android.database.sqlite.SQLiteException;
 import android.text.TextUtils;
 
 import com.github.snowdream.android.util.Log;
-import com.zilla.dbzilla.core.util.AnnotationUtil;
-import com.zilla.dbzilla.core.util.ReflectUtil;
-import com.zilla.dbzilla.core.util.TableHolder;
+import com.zilla.dbzilla.core.util.*;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -372,12 +370,15 @@ public class ZillaDB {
      * @param cursor cursor
      * @return ContentValues
      */
+
     private ContentValues model2ContentValues(Object model, Cursor cursor) {
         ContentValues value = new ContentValues();
         String[] names = cursor.getColumnNames();
         for (int i = 0, l = names.length; i < l; i++) {
             try {
-                value.put(names[i], ReflectUtil.getFieldValue(model, names[i]).toString());
+                String name = names[i];
+                value.put(name,
+                        ReflectUtil.getFieldValue(model, ModelHolder.getFieldByName(model.getClass(), name)).toString());
             } catch (Exception e) {
 
             }

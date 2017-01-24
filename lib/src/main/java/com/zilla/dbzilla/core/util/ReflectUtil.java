@@ -146,6 +146,7 @@ public class ReflectUtil {
      * @return the value of field
      */
     public static Object getFieldValue(Object obj, String key) {
+        // TODO: 24/01/2017 performance
         Object result = null;
         try {
             Field field = getModelField(obj.getClass(), key);
@@ -159,6 +160,25 @@ public class ReflectUtil {
         return result;
     }
 
+    /**
+     * 返回对象属性的值
+     *
+     * @param obj
+     * @param field
+     * @return
+     */
+    public static Object getFieldValue(Object obj, Field field) {
+        Object result = null;
+        try {
+            field.setAccessible(true);
+            result = field.get(obj);
+        } catch (IllegalArgumentException e) {
+            Log.e("IllegalArgumentException", e);
+        } catch (IllegalAccessException e) {
+            Log.e("IllegalAccessException", e);
+        }
+        return result;
+    }
 
     /**
      * get field by field name from class.
@@ -170,17 +190,18 @@ public class ReflectUtil {
     public static Field getModelField(Class c, String fieldName) {
         String key = c.getName() + "." + fieldName;
         if (modelFieldCache.containsKey(key)) {
+            Log.d("getModelField -> action");
             return modelFieldCache.get(key);
         } else {
+            Log.d("getModelField -> not action");
             Field f = null;
             try {
                 f = c.getDeclaredField(fieldName);
             } catch (NoSuchFieldException e) {
                 e.printStackTrace();
-            } finally {
-                modelFieldCache.put(key, f);
-                return f;
             }
+            modelFieldCache.put(key, f);
+            return f;
         }
     }
 
