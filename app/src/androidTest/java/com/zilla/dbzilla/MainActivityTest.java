@@ -26,10 +26,13 @@ import static android.support.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static android.support.test.espresso.matcher.ViewMatchers.withText;
 
 /**
+ * Instrumentation test, which will execute on an Android device.
+ *
+ * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
+ * <p>
  * Created by zilla on 24/01/2017.
  */
 public class MainActivityTest {
-
     @Rule
     public ActivityTestRule mActivityRule = new ActivityTestRule(MainActivity.class);
 

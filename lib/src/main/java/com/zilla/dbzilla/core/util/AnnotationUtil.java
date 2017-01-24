@@ -13,15 +13,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
  */
-package com.zilla.dbzilla.db.util;
+package com.zilla.dbzilla.core.util;
 
 import android.content.ContentValues;
 import android.database.sqlite.SQLiteDatabase;
 import android.text.TextUtils;
 
 import com.github.snowdream.android.util.Log;
-import com.zilla.dbzilla.db.Id;
-import com.zilla.dbzilla.db.Table;
+import com.zilla.dbzilla.core.Id;
+import com.zilla.dbzilla.core.Table;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;

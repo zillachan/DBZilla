@@ -1,20 +1,19 @@
 /*
- * Copyright (c) 2015. Zilla Chen
+ * Copyright 2017. Zilla Chen
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
+ * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package com.zilla.dbzilla.db;
+package com.zilla.dbzilla.core;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -22,12 +21,16 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Many to one
- * 一对多双向关联跟多对一是一样的,在多端生成一个外键,不生成第三张表来管理对应关系,由外键来管理对应关系
- * Created by zilla on 11/3/15.
+ * The table annotation for a pojo class,if you don't use,the className will be used.
+ * <br>
+ * 表名定义，用于模型类的注释 默认情况下如果模型类不使用Table注释，那么保存到数据库时，使用模型类类名的小写保存入表
+ * 如果使用了Table注释，表名则为Table注释所指定的内容
+ * 
+ * @author ze.chen
+ * 
  */
-@Target(ElementType.FIELD)
+@Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface M2O {
+public @interface Table {
     String value();
 }

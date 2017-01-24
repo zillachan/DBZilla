@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 
-package com.zilla.dbzilla;
+package com.zilla.dbzilla.core;
 
-
-import com.zilla.dbzilla.core.Id;
-import com.zilla.dbzilla.core.Table;
 
 import java.io.Serializable;
 

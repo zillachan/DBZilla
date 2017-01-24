@@ -1,25 +1,15 @@
-package com.zilla.dbzilla;
+package com.zilla.dbzilla.core;
 
 import org.junit.*;
+
+import static org.junit.Assert.*;
 
 /**
  * Example local unit test, which will execute on the development machine (host).
  *
- * @Before 该方法在每次测试方法调用前都会调用
- * @BeforeClass 该方法在所有测试方法之前调用，只会被调用一次
- * @Test 说明了该方法需要测试
- * @After 该方法在每次测试方法调用后都会调用
- * @AfterClass 该方法在所有测试方法之后调用，只会被调用一次
- * @Ignore 忽略该方法
  * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
  */
-public class ExampleUnitTest {
-//    @Test
-//    public void addition_isCorrect() throws Exception {
-//        assertEquals(4, 2 + 2);
-//    }
-
-    ///////////////////demo
+public class JUnitTest {
     @Before
     public void init() {
         System.out.println("------method init called------");

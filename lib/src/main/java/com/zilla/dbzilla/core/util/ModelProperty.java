@@ -1,4 +1,4 @@
-package com.zilla.dbzilla.db.util;
+package com.zilla.dbzilla.core.util;
 
 import java.lang.reflect.Field;
 

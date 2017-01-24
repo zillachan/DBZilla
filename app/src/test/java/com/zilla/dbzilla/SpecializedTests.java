@@ -23,7 +23,7 @@ import org.junit.runners.Suite;
  * Created by zilla on 24/01/2017.
  */
 @RunWith(Suite.class)
-@Suite.SuiteClasses({ExampleInstrumentedTest.class})
+@Suite.SuiteClasses({ExampleUnitTest.class})
 public class SpecializedTests {
 
 }

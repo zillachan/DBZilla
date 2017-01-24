@@ -1,20 +1,19 @@
 /*
- * Copyright (c) 2015. Zilla Chen
+ * Copyright 2017. Zilla Chen
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
+ * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package com.zilla.dbzilla.db;
+package com.zilla.dbzilla.core;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -22,12 +21,15 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * one to many
- * 一对多双向关联跟多对一是一样的,在多端生成一个外键,不生成第三张表来管理对应关系,由外键来管理对应关系
- * Created by zilla on 11/3/15.
+ * the key annotation for a table,if a pojo class contains the annotation,it will be the key of table,otherwise will use _id as default key.
+ *<br>
+ * 表的主键注释，如果一个BaseMode的实现类中有字段含有该注释，则该字段为主键，否则默认采用_id为自增主键
+ *
+ * @author ze.chen
+ * 
  */
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface O2M {
-    String value();
+public @interface Id {
+	
 }
