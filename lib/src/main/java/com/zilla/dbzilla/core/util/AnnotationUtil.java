@@ -132,6 +132,21 @@ public class AnnotationUtil {
     }
 
     /**
+     * return autoIdValue
+     *
+     * @param obj
+     * @return if not autoid,return -1;else id value
+     */
+    public static long getAutoIdValue(Object obj) {
+        String key = getAutoIdName(obj.getClass(), true);
+        Object result = ReflectUtil.getFieldValue(obj, key);
+        if (result != null) {
+            return (long) result;
+        }
+        return -1;
+    }
+
+    /**
      * set keyvalue of an saved obj
      *
      * @param obj

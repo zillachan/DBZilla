@@ -11,3 +11,7 @@ user.setName("zhang");
 user.setAddress("binghu");
 ZillaDB.getInstance().save(user);
 ```
+
+
+### Performance
+greenrobot.org/android/android-orm-performance-2016/

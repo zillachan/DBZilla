@@ -22,14 +22,14 @@ import java.lang.annotation.Target;
 
 /**
  * the key annotation for a table,if a pojo class contains the annotation,it will be the key of table,otherwise will use _id as default key.
- *<br>
+ * <br>
  * 表的主键注释，如果一个BaseMode的实现类中有字段含有该注释，则该字段为主键，否则默认采用_id为自增主键
+ * only int & long supported.
  *
  * @author ze.chen
- * 
  */
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Id {
-	
+
 }

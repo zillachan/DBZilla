@@ -82,44 +82,59 @@ public class ZillaDB {
     @SuppressLint("NewApi")
     public boolean save(Object model) {
         lock.writeLock().lock();
+
+        long id = 0;
         String tableName = null;
         ContentValues value = null;
-        long id = 0;
+
         try {
             filter(model.getClass());
             tableName = AnnotationUtil.getTableName(model.getClass());
-
             value = AnnotationUtil.model2ContentValues(database, model, tableName);
-
-            // 添加异常处理，如果插入冲突，改为update
-            id = database.insertWithOnConflict(tableName, "", value,
-                    SQLiteDatabase.CONFLICT_NONE);//主键冲突策略，替换掉以往的数据
-
-        } catch (SQLiteConstraintException e) {//主键冲突
-            Log.d("INSERT '" + tableName + "' failed try remove key again.", e);
-            try {
-                String key = AnnotationUtil.getIdName(model.getClass());
-                value.remove(key);
-
-                id = database.insertWithOnConflict(tableName, "", value,
-                        SQLiteDatabase.CONFLICT_REPLACE);//主键冲突策略，替换掉以往的数据
-                Log.i("INSERT'" + tableName + "'success.");
-
-            } catch (SQLiteConstraintException e1) {
-                Log.e("INSERT '" + tableName + "' failed.", e1);
-            } catch (SQLiteException sqLiteException) {
-                Log.e("INSERT '" + tableName + "' failed.", sqLiteException);
-            } catch (Exception ex) {
-                Log.e("INSERT '" + tableName + "' failed.", ex);
+            if (0 == AnnotationUtil.getAutoIdValue(model)) {
+                id = saveOnKeyConflict(model, value, tableName);
+            } else {
+                try {
+                    // 添加异常处理，如果插入冲突，改为update
+                    id = database.insertWithOnConflict(tableName, "", value,
+                            SQLiteDatabase.CONFLICT_NONE);//主键冲突策略，替换掉以往的数据
+                } catch (SQLiteConstraintException e) {//主键冲突
+                    id = saveOnKeyConflict(model, value, tableName);
+                }
             }
-        } catch (Exception e) {
-//            update(model);
-            Log.e("INSERT '" + tableName + "' failed.", e);
         } finally {
             AnnotationUtil.setAutoIdValue(model, id);
             lock.writeLock().unlock();
         }
         return true;
+    }
+
+    /**
+     * when save conflict,try remove the primary key and save again.
+     *
+     * @param model
+     * @param value
+     * @param tableName
+     * @return
+     */
+    private long saveOnKeyConflict(Object model, ContentValues value, String tableName) {
+        long result = 0;
+        try {
+            String key = AnnotationUtil.getIdName(model.getClass());
+            value.remove(key);
+
+            result = database.insertWithOnConflict(tableName, "", value,
+                    SQLiteDatabase.CONFLICT_REPLACE);//主键冲突策略，替换掉以往的数据
+            Log.i("INSERT'" + tableName + "'success.");
+
+        } catch (SQLiteConstraintException e1) {
+            Log.e("INSERT '" + tableName + "' failed.", e1);
+        } catch (SQLiteException sqLiteException) {
+            Log.e("INSERT '" + tableName + "' failed.", sqLiteException);
+        } catch (Exception ex) {
+            Log.e("INSERT '" + tableName + "' failed.", ex);
+        }
+        return result;
     }
 
     /**
