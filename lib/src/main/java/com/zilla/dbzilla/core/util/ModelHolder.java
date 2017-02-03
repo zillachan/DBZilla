@@ -16,6 +16,7 @@ limitations under the License.
 package com.zilla.dbzilla.core.util;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.*;
 
 /**
@@ -47,11 +48,16 @@ public class ModelHolder {
             Field[] fields = ReflectUtil.getModelFields(c);
             List<ModelProperty> modelProperties = new ArrayList<>();
             for (Field field : fields) {
-                ModelProperty model = new ModelProperty();
-                model.setField(field);
-                model.setName(field.getName());
-                model.setType(field.getType());
-                modelProperties.add(model);
+                int modifiers = field.getModifiers();
+                if (Modifier.isStatic(modifiers) || Modifier.isFinal(modifiers) || Modifier.isVolatile(modifiers) || Modifier.isTransient(modifiers)) {
+                    continue;
+                } else {
+                    ModelProperty model = new ModelProperty();
+                    model.setField(field);
+                    model.setName(field.getName());
+                    model.setType(field.getType());
+                    modelProperties.add(model);
+                }
             }
             Collections.sort(modelProperties);
             mValue.put(c, modelProperties);
@@ -83,6 +89,7 @@ public class ModelHolder {
         if (sqlCache.containsKey(c)) return sqlCache.get(c);
         StringBuilder sql = new StringBuilder();
         sql.append("INSERT");
+        sql.append(" OR IGNORE ");
         sql.append(" INTO ");
         sql.append(AnnotationUtil.getTableName(c));
         sql.append('(');

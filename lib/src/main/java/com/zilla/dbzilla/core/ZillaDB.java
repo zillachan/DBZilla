@@ -21,6 +21,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteConstraintException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
+import android.database.sqlite.SQLiteStatement;
 import android.text.TextUtils;
 
 import com.github.snowdream.android.util.Log;
@@ -29,6 +30,7 @@ import com.zilla.dbzilla.core.util.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -107,6 +109,65 @@ public class ZillaDB {
         return true;
     }
 
+
+    @SuppressLint("NewApi")
+    private void save4List(Object model) {
+//        String tableName = AnnotationUtil.getTableName(model.getClass());
+//        ContentValues value = AnnotationUtil.model2ContentValues(database, model, tableName);
+//        if (0 == AnnotationUtil.getAutoIdValue(model)) {
+//            saveOnKeyConflict(model, value, tableName);
+//        } else {
+//            // 添加异常处理，如果插入冲突，改为update
+//            database.insertWithOnConflict(tableName, "", value,
+//                    SQLiteDatabase.CONFLICT_NONE);//主键冲突策略，替换掉以往的数据
+//        }
+
+        String sql = ModelHolder.getInsetSQL(model.getClass());
+
+        SQLiteStatement stat = database.compileStatement(sql);
+
+        //bind
+        List<ModelProperty> modelProperties = ModelHolder.getProperties(model.getClass());
+        for (int i = 0, l = modelProperties.size(); i < l; i++) {
+            ModelProperty modelProperty = modelProperties.get(i);
+            Object fieldValue = ReflectUtil.getFieldValue(model, modelProperty.getField());
+            Class<?> type = modelProperty.getField().getType();
+            if (String.class == type) {
+                if (fieldValue == null) {
+                    stat.bindNull(i + 1);
+                } else {
+                    stat.bindString(i + 1, (String) fieldValue);
+                }
+            } else if (long.class == type) {
+                stat.bindLong(i + 1, (Long) fieldValue);
+            } else if (double.class == type) {
+                stat.bindDouble(i + 1, (Double) fieldValue);
+            } else if (int.class == type) {
+                stat.bindLong(i + 1, (Integer) fieldValue);
+            } else if (short.class == type) {
+                stat.bindDouble(i + 1, (Short) fieldValue);
+            } else if (boolean.class == type) {
+                stat.bindLong(i + 1, (Boolean) fieldValue ? 1 : 0);
+            } else {
+                stat.bindString(i + 1, (String) fieldValue);
+            }
+        }
+        stat.executeInsert();
+
+
+//        stat.bindAllArgsAsStrings();
+//        stat.bindLong(1, memberInfo.getGroupID());
+//        stat.bindString(2, memberInfo.getMemberSubsID());
+//        stat.bindString(3, memberInfo.getMemberNickName());
+//        stat.bindLong(4, memberInfo.getMemberRole());
+//        stat.bindString(5, memberInfo.getMemberJID());
+//        stat.bindString(6, memberInfo.getMemUnionKey());
+//        stat.bindString(7, convertDate2String(memberInfo.getCreatTime()));
+//        stat.bindString(8, convertDate2String(memberInfo.getUpdateTime()));
+//        stat.bindString(9, memberInfo.getOrderID());
+//        stat.bindString(10, memberInfo.getExt());
+    }
+
     /**
      * when save conflict,try remove the primary key and save again.
      *
@@ -153,7 +214,7 @@ public class ZillaDB {
             filter(temp.getClass());
             database.beginTransaction();
             for (int i = 0, l = list.size(); i < l; i++) {
-                save(list.get(i));
+                save4List(list.get(i));
             }
             database.setTransactionSuccessful();// 必须执行该方法，否则事务会回滚
             database.endTransaction();
@@ -813,17 +874,19 @@ public class ZillaDB {
             String key = AnnotationUtil.getIdName(c);
             sBuilder.append(" ( ");
             List<Field> fieldList = new ArrayList<Field>();
-            for (Field field : fields) {
-                int modifiers = field.getModifiers();
+            List<ModelProperty> modelProperties = ModelHolder.getProperties(c);
+            for (ModelProperty modelProperty : modelProperties) {
+                int modifiers = modelProperty.getField().getModifiers();
                 if (Modifier.isStatic(modifiers) || Modifier.isFinal(modifiers) || Modifier.isVolatile(modifiers) || Modifier.isTransient(modifiers)) {
+                    continue;
                 } else {
-                    fieldList.add(field);
+                    fieldList.add(modelProperty.getField());
                 }
             }
             for (int i = 0, l = fieldList.size(); i < l; i++) {
                 Field field = fieldList.get(i);
                 String fieldName = field.getName();
-                if (Modifier.FINAL == field.getModifiers()) break; //如果是final类型的，跳过
+//                if (Modifier.FINAL == field.getModifiers()) break; //如果是final类型的，跳过
                 if (fieldName.equals(key)) {
                     String type = getType(field);
                     if ("INTEGER".equals(type)) {
