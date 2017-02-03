@@ -5,7 +5,7 @@ import java.lang.reflect.Field;
 /**
  * Created by zilla on 23/01/2017.
  */
-public class ModelProperty {
+public class ModelProperty implements Comparable<ModelProperty> {
 
     private Field field;
     /**
@@ -20,6 +20,11 @@ public class ModelProperty {
 
     public ModelProperty() {
     }
+
+    public ModelProperty(String name) {
+        this.name = name;
+    }
+
 
     public Field getField() {
         return field;
@@ -52,5 +57,10 @@ public class ModelProperty {
                 ", name='" + name + '\'' +
                 ", type=" + type +
                 '}';
+    }
+
+    @Override
+    public int compareTo(ModelProperty o) {
+        return this.name.compareTo(o.getName());
     }
 }
