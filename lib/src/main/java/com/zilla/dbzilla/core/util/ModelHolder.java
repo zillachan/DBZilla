@@ -16,9 +16,7 @@ limitations under the License.
 package com.zilla.dbzilla.core.util;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 /**
  * Model properties
@@ -33,6 +31,8 @@ public class ModelHolder {
      * model class,model fields(name,type)
      */
     private static HashMap<Class, List<ModelProperty>> mValue = new HashMap<>();
+
+    private static HashMap<Class, String> sqlCache = new HashMap<>();
 
     /**
      * get model field properties
@@ -53,6 +53,7 @@ public class ModelHolder {
                 model.setType(field.getType());
                 modelProperties.add(model);
             }
+            Collections.sort(modelProperties);
             mValue.put(c, modelProperties);
             return modelProperties;
         }
@@ -61,10 +62,48 @@ public class ModelHolder {
 
     public static Field getFieldByName(Class c, String fieldName) {
         List<ModelProperty> properties = getProperties(c);
-        for (ModelProperty modelProperty : properties) {
-            if (modelProperty.getName().equals(fieldName)) return modelProperty.getField();
+        ModelProperty modelProperty = properties.get(Collections.binarySearch(properties, new ModelProperty(fieldName)));
+        if (modelProperty != null) {
+            return modelProperty.getField();
         }
         return null;
+//        for (ModelProperty modelProperty : properties) {
+//            if (modelProperty.getName().equals(fieldName)) return modelProperty.getField();
+//        }
+//        return null;
+    }
+
+    /**
+     * get the inset sql of model
+     *
+     * @param c
+     * @return
+     */
+    public static String getInsetSQL(Class c) {
+        if (sqlCache.containsKey(c)) return sqlCache.get(c);
+        StringBuilder sql = new StringBuilder();
+        sql.append("INSERT");
+        sql.append(" INTO ");
+        sql.append(AnnotationUtil.getTableName(c));
+        sql.append('(');
+
+        List<ModelProperty> modelProperties = ModelHolder.getProperties(c);
+        StringBuilder values = new StringBuilder();
+        values.append("(");
+
+        for (ModelProperty modelProperty : modelProperties) {
+            sql.append(modelProperty.getName()).append(",");
+            values.append("?,");
+        }
+        sql.deleteCharAt(sql.length() - 1);
+        sql.append(") values ");
+
+        values.deleteCharAt(values.length() - 1);
+        values.append(")");
+        sql.append(values);
+        String result = sql.toString();
+        sqlCache.put(c, result);
+        return result;
     }
 
 }
