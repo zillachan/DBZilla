@@ -111,7 +111,7 @@ public class ZillaDB {
 
 
     @SuppressLint("NewApi")
-    private void save4List(Object model) {
+    private void save4List(SQLiteStatement stat,Object model) {
 //        String tableName = AnnotationUtil.getTableName(model.getClass());
 //        ContentValues value = AnnotationUtil.model2ContentValues(database, model, tableName);
 //        if (0 == AnnotationUtil.getAutoIdValue(model)) {
@@ -122,10 +122,8 @@ public class ZillaDB {
 //                    SQLiteDatabase.CONFLICT_NONE);//主键冲突策略，替换掉以往的数据
 //        }
 
-        String sql = ModelHolder.getInsetSQL(model.getClass());
 
-        SQLiteStatement stat = database.compileStatement(sql);
-
+        stat.clearBindings();
         //bind
         List<ModelProperty> modelProperties = ModelHolder.getProperties(model.getClass());
         for (int i = 0, l = modelProperties.size(); i < l; i++) {
@@ -213,8 +211,13 @@ public class ZillaDB {
             Object temp = list.get(0);
             filter(temp.getClass());
             database.beginTransaction();
+
+            String sql = ModelHolder.getInsetSQL(temp.getClass());
+
+            SQLiteStatement stat = database.compileStatement(sql);
+
             for (int i = 0, l = list.size(); i < l; i++) {
-                save4List(list.get(i));
+                save4List(stat,list.get(i));
             }
             database.setTransactionSuccessful();// 必须执行该方法，否则事务会回滚
             database.endTransaction();
