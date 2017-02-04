@@ -53,15 +53,18 @@ public final class AutoAssistProcesser extends AbstractProcessor {
             if (element.getKind() != ElementKind.CLASS) {
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "only support class");
             }
+            TypeElement typeElement = (TypeElement) element;
             /*生成方法*/
             MethodSpec creaedMethod = MethodSpec.methodBuilder("bind")
                     .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
                     .returns(void.class)
                     .addParameter(SQLiteStatement.class, "stat")
                     .addStatement("System.out.println($S)", "this`s java source is created by dynamic")
+                    .addStatement("stat.clearBindings()")
+
                     .build();
             TypeSpec createdClass = TypeSpec.classBuilder(element.getSimpleName().toString()).addModifiers(Modifier.PUBLIC).addMethod(creaedMethod).build();//指定生成的类
-            JavaFile javaFile = JavaFile.builder("com.zilla.xxxx", createdClass).build();
+            JavaFile javaFile = JavaFile.builder(typeElement.getEnclosingElement().toString(), createdClass).build();
 
             try {
                 javaFile.writeTo(processingEnv.getFiler());
