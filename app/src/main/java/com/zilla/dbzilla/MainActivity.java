@@ -21,6 +21,10 @@ import android.support.v7.app.AppCompatActivity;
 import com.github.snowdream.android.util.Log;
 import com.zilla.dbzilla.core.DBHelper;
 import com.zilla.dbzilla.core.ZillaDB;
+import com.zilla.dbzilla.greendao.DaoMaster;
+import com.zilla.dbzilla.greendao.DaoSession;
+import com.zilla.dbzilla.greendao.GreenUser;
+import org.greenrobot.greendao.database.Database;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
         Log.setEnabled(false);
 //        testSave();
         testSaveList();
+        testSaveDaoList();
     }
 
     private void testSave() {
@@ -64,6 +69,29 @@ public class MainActivity extends AppCompatActivity {
         long end = System.currentTimeMillis();
         Log.d("save 10000 items, use times:" + (end - begin) + "");
 
-        android.util.Log.d("===","save 10000 items, use times:" + (end - begin) + "");
+        android.util.Log.d("===zilla", "save 10000 items, use times:" + (end - begin) + "");
+    }
+
+    private void testSaveDaoList() {
+        DaoMaster.DevOpenHelper helper = new DaoMaster.DevOpenHelper(this, "test");
+        Database db = helper.getWritableDb();
+        DaoSession daoSession = new DaoMaster(db).newSession();
+        List<GreenUser> list = new ArrayList<>();
+        for (int i = 0; i < 10000; i++) {
+            GreenUser user = new GreenUser();
+            user.setId(null);
+            user.setName("zhang");
+            user.setAddress("binghu");
+            user.setAge(i);
+            user.setSalary2(0.1 + i);
+            list.add(user);
+        }
+        long begin = System.currentTimeMillis();
+//        ZillaDB.getInstance().saveList(list);
+        daoSession.getGreenUserDao().insertInTx(list);
+        long end = System.currentTimeMillis();
+        Log.d("save 10000 items, use times:" + (end - begin) + "");
+
+        android.util.Log.d("===green", "save 10000 items, use times:" + (end - begin) + "");
     }
 }
