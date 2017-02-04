@@ -14,5 +14,10 @@ ZillaDB.getInstance().save(user);
 
 
 ### Performance
-greenrobot.org/android/android-orm-performance-2016/
-[链接]<https://github.com/greenrobot/android-database-performance>
+<http://greenrobot.org/android/android-orm-performance-2016/>
+<https://github.com/greenrobot/android-database-performance>
+
+### Annotation
+
+<http://www.open-open.com/lib/view/open1476329129826.html>
+<https://github.com/JakeWharton/butterknife>
