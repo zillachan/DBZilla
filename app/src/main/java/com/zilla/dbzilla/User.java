@@ -17,6 +17,7 @@
 package com.zilla.dbzilla;
 
 
+import com.zilla.dbzilla.annotations.AutoAssist;
 import com.zilla.dbzilla.core.Id;
 import com.zilla.dbzilla.core.Table;
 
@@ -30,6 +31,7 @@ import java.io.Serializable;
  * @date 2017-01-22
  */
 
+@AutoAssist
 @Table("t_user")
 public class User implements Serializable {
 
