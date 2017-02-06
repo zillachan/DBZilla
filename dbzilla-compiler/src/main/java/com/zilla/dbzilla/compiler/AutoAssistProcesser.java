@@ -18,19 +18,21 @@ package com.zilla.dbzilla.compiler;
 
 import android.database.sqlite.SQLiteStatement;
 import com.google.auto.service.AutoService;
-import com.squareup.javapoet.JavaFile;
-import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.TypeSpec;
+import com.squareup.javapoet.*;
 import com.zilla.dbzilla.annotations.AutoAssist;
 
-import javax.annotation.processing.*;
-import javax.lang.model.element.Element;
-import javax.lang.model.element.ElementKind;
-import javax.lang.model.element.Modifier;
-import javax.lang.model.element.TypeElement;
+import javax.annotation.processing.AbstractProcessor;
+import javax.annotation.processing.ProcessingEnvironment;
+import javax.annotation.processing.Processor;
+import javax.annotation.processing.RoundEnvironment;
+import javax.lang.model.element.*;
+import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.ElementFilter;
 import javax.tools.Diagnostic;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 @AutoService(Processor.class)
@@ -54,16 +56,53 @@ public final class AutoAssistProcesser extends AbstractProcessor {
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "only support class");
             }
             TypeElement typeElement = (TypeElement) element;
-            /*生成方法*/
-            MethodSpec creaedMethod = MethodSpec.methodBuilder("bind")
+
+            TypeSpec createdClass = null;
+            com.squareup.javapoet.TypeSpec.Builder builder = TypeSpec.classBuilder(element.getSimpleName().toString() + "Attribute")//指定生成的类
+                    .addModifiers(Modifier.PUBLIC);
+
+
+            /*generate methods*/
+            MethodSpec bindMethod = null;
+            MethodSpec.Builder mb = null;
+//            Class typeClass = null;
+//            try {
+//                typeClass = Class.forName(element.getEnclosingElement().toString() + "." + element.getSimpleName());
+//            } catch (ClassNotFoundException e) {
+//                e.printStackTrace();
+//            }
+            mb = MethodSpec.methodBuilder("bind")
                     .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
                     .returns(void.class)
                     .addParameter(SQLiteStatement.class, "stat")
-                    .addStatement("System.out.println($S)", "this`s java source is created by dynamic")
-                    .addStatement("stat.clearBindings()")
+                    .addParameter(TypeName.get(element.asType()), "model")
+                    //                    .addStatement("System.out.println($S)", "this`s java source is created by dynamic")
+                    .addStatement("stat.clearBindings()");
 
-                    .build();
-            TypeSpec createdClass = TypeSpec.classBuilder(element.getSimpleName().toString()).addModifiers(Modifier.PUBLIC).addMethod(creaedMethod).build();//指定生成的类
+
+            List<VariableElement> allFields = ElementFilter.fieldsIn(element.getEnclosedElements());
+            for (VariableElement variableElement : allFields) {
+
+                String variableName = variableElement.getSimpleName().toString();
+                String variableName2 = variableName.substring(0, 1).toUpperCase() + variableName.substring(1);
+
+                /*generate fields*/
+                FieldSpec fieldSpec = FieldSpec.builder(String.class, variableName.toUpperCase(), Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
+                        .initializer("$S", variableName).build();
+                builder.addField(fieldSpec);
+
+                /*binding fields*/
+                StringBuilder sb = new StringBuilder();
+                String type = variableElement.asType().toString();
+
+                sb.append("stat.bind").append(type).append("( ").append(1).append(" , ").append("model.get").append(variableName2).append("())");
+                mb.addStatement(sb.toString());
+            }
+
+            bindMethod = mb.build();
+
+            builder.addMethod(bindMethod);
+            createdClass = builder.build();
             JavaFile javaFile = JavaFile.builder(typeElement.getEnclosingElement().toString(), createdClass).build();
 
             try {
