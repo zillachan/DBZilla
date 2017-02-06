@@ -93,9 +93,22 @@ public final class AutoAssistProcesser extends AbstractProcessor {
 
                 /*binding fields*/
                 StringBuilder sb = new StringBuilder();
-                String type = variableElement.asType().toString();
+                String type = TypeName.get(variableElement.asType()).box().toString();
+                type = type.substring(type.lastIndexOf(".") + 1);
 
-                sb.append("stat.bind").append(type).append("( ").append(1).append(" , ").append("model.get").append(variableName2).append("())");
+                String appendExtra = "";
+                String getOriS = "model.get";
+                if ("Integer".equals(type)) {
+                    type = "Long";
+                } else if ("Short".equals(type)) {
+                    type = "Double";
+                } else if ("Boolean".equals(type)) {
+                    type = "Long";
+                    appendExtra = " ? 1L:0L";
+                    getOriS = "model.is";
+                }
+                sb.append("stat.bind").append(type).append("( ").append(1).append(" , ").append(getOriS).append(variableName2).append("()").append(appendExtra).append(")");
+
                 mb.addStatement(sb.toString());
             }
 
