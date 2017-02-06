@@ -26,8 +26,6 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.element.*;
-import javax.lang.model.type.TypeKind;
-import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 import javax.tools.Diagnostic;
 import java.io.IOException;
@@ -63,15 +61,7 @@ public final class AutoAssistProcesser extends AbstractProcessor {
 
 
             /*generate methods*/
-            MethodSpec bindMethod = null;
-            MethodSpec.Builder mb = null;
-//            Class typeClass = null;
-//            try {
-//                typeClass = Class.forName(element.getEnclosingElement().toString() + "." + element.getSimpleName());
-//            } catch (ClassNotFoundException e) {
-//                e.printStackTrace();
-//            }
-            mb = MethodSpec.methodBuilder("bind")
+            MethodSpec.Builder mb = MethodSpec.methodBuilder("bind")
                     .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
                     .returns(void.class)
                     .addParameter(SQLiteStatement.class, "stat")
@@ -107,12 +97,21 @@ public final class AutoAssistProcesser extends AbstractProcessor {
                     appendExtra = " ? 1L:0L";
                     getOriS = "model.is";
                 }
-                sb.append("stat.bind").append(type).append("( ").append(1).append(" , ").append(getOriS).append(variableName2).append("()").append(appendExtra).append(")");
+                boolean isString = "String".equals(type);
+                if (isString) {
+                    sb.append("if(" + getOriS + variableName2 + "() != null){\n");
+                }
 
+                sb.append("stat.bind").append(type).append("( ").append(1).append(" , ")
+                        .append(getOriS).append(variableName2).append("()").append(appendExtra).append(")").append(isString ? ";\n" : "");
+
+                if (isString) {
+                    sb.append("}");
+                }
                 mb.addStatement(sb.toString());
             }
 
-            bindMethod = mb.build();
+            MethodSpec bindMethod = mb.build();
 
             builder.addMethod(bindMethod);
             createdClass = builder.build();
