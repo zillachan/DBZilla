@@ -55,10 +55,8 @@ public final class AutoAssistProcesser extends AbstractProcessor {
             }
             TypeElement typeElement = (TypeElement) element;
 
-            TypeSpec createdClass = null;
             com.squareup.javapoet.TypeSpec.Builder builder = TypeSpec.classBuilder(element.getSimpleName().toString() + "Attribute")//指定生成的类
                     .addModifiers(Modifier.PUBLIC);
-
 
             /*generate methods*/
             MethodSpec.Builder mb = MethodSpec.methodBuilder("bind")
@@ -66,7 +64,7 @@ public final class AutoAssistProcesser extends AbstractProcessor {
                     .returns(void.class)
                     .addParameter(SQLiteStatement.class, "stat")
                     .addParameter(TypeName.get(element.asType()), "model")
-                    //                    .addStatement("System.out.println($S)", "this`s java source is created by dynamic")
+                    .addParameter(List.class, "seq")//seq index.
                     .addStatement("stat.clearBindings()");
 
 
@@ -76,10 +74,17 @@ public final class AutoAssistProcesser extends AbstractProcessor {
                 String variableName = variableElement.getSimpleName().toString();
                 String variableName2 = variableName.substring(0, 1).toUpperCase() + variableName.substring(1);
 
+                String fieldNameUpperCase = variableName.toUpperCase();
+
                 /*generate fields*/
-                FieldSpec fieldSpec = FieldSpec.builder(String.class, variableName.toUpperCase(), Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
+                FieldSpec fieldSpec = FieldSpec.builder(String.class, fieldNameUpperCase, Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
                         .initializer("$S", variableName).build();
                 builder.addField(fieldSpec);
+
+                //database column index.
+                FieldSpec fieldSpecIndex = FieldSpec.builder(int.class, "INDEX_" + fieldNameUpperCase, Modifier.PUBLIC, Modifier.STATIC)
+                        .initializer(0 + "").build();
+                builder.addField(fieldSpecIndex);
 
                 /*binding fields*/
                 StringBuilder sb = new StringBuilder();
@@ -102,7 +107,7 @@ public final class AutoAssistProcesser extends AbstractProcessor {
                     sb.append("if(" + getOriS + variableName2 + "() != null){\n");
                 }
 
-                sb.append("stat.bind").append(type).append("( ").append(1).append(" , ")
+                sb.append("stat.bind").append(type).append("( ").append("INDEX_" + fieldNameUpperCase).append(" , ")
                         .append(getOriS).append(variableName2).append("()").append(appendExtra).append(")").append(isString ? ";\n" : "");
 
                 if (isString) {
@@ -111,10 +116,11 @@ public final class AutoAssistProcesser extends AbstractProcessor {
                 mb.addStatement(sb.toString());
             }
 
+            mb.addJavadoc("generate binding model properties to statement");
             MethodSpec bindMethod = mb.build();
 
             builder.addMethod(bindMethod);
-            createdClass = builder.build();
+            TypeSpec createdClass = builder.build();
             JavaFile javaFile = JavaFile.builder(typeElement.getEnclosingElement().toString(), createdClass).build();
 
             try {
